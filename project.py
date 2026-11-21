@@ -9,6 +9,11 @@ SUPPORTED_EXTENSIONS = {".txt", ".log", ".csv"}
 MatchRecord = Tuple[str, int, str]  # (file_path, line_number, line_text)
 
 
+# =============================================================================
+# OBJECTIVE 1: Develop a Working Python Application
+# Scans a directory tree for text files (.txt, .log, .csv) and searches their
+# content for user-specified keywords.
+# =============================================================================
 def collect_files(target_dir: Path) -> List[str]:
     files: List[str] = []
     for root, _, filenames in os.walk(target_dir):
@@ -33,7 +38,13 @@ def search_single_file(file_path: str, keyword: str, case_sensitive: bool = Fals
     return matches
 
 
+# =============================================================================
+# OBJECTIVE 2: Implement Dual Execution Modes
+# Baseline sequential search loop and parallel multi-process search engine for
+# direct side-by-side performance comparison.
+# =============================================================================
 def run_sequential(files: List[str], keyword: str, case_sensitive: bool = False) -> Tuple[List[MatchRecord], float]:
+    # OBJECTIVE 3: Measure Execution Time using time.perf_counter()
     start = time.perf_counter()
     all_matches: List[MatchRecord] = []
     for file_path in files:
@@ -48,6 +59,7 @@ def run_parallel(
     workers: int,
     case_sensitive: bool = False,
 ) -> Tuple[List[MatchRecord], float]:
+    # OBJECTIVE 3: Measure Execution Time using time.perf_counter()
     start = time.perf_counter()
     all_matches: List[MatchRecord] = []
     with ProcessPoolExecutor(max_workers=workers) as executor:
@@ -61,10 +73,20 @@ def run_parallel(
     return all_matches, elapsed
 
 
+def prompt_if_missing(args: argparse.Namespace) -> None:
+    """Prompt interactively when directory or keyword is not passed on the CLI."""
+    if not args.directory:
+        args.directory = input("Enter folder to search (e.g., sample_logs, large_logs): ").strip()
+    if not args.keyword:
+        args.keyword = input("Enter keyword to search for: ").strip()
+    if not args.directory or not args.keyword:
+        raise SystemExit("Both folder and keyword are required.")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description="Parallel Keyword Search in Text Files")
-    parser.add_argument("directory", type=str, help="Target directory containing text/log/csv files")
-    parser.add_argument("keyword", type=str, help="Keyword to search for")
+    parser.add_argument("directory", nargs="?", type=str, help="Target directory containing text/log/csv files")
+    parser.add_argument("keyword", nargs="?", type=str, help="Keyword to search for")
     parser.add_argument(
         "--workers",
         type=int,
@@ -75,6 +97,15 @@ def main() -> None:
     parser.add_argument("--case-sensitive", action="store_true", help="Enable case-sensitive matching")
     parser.add_argument("--show-matches", action="store_true", help="Print individual matching lines")
     args = parser.parse_args()
+
+    interactive = not args.directory or not args.keyword
+    prompt_if_missing(args)
+    if interactive:
+        cs_ans = input("Case-sensitive search? (y/N): ").strip().lower()
+        args.case_sensitive = args.case_sensitive or cs_ans in {"y", "yes"}
+        sm_ans = input("Show matching lines? (y/N): ").strip().lower()
+        args.show_matches = args.show_matches or sm_ans in {"y", "yes"}
+        print()
 
     target_dir = Path(args.directory)
     if not target_dir.is_dir():
@@ -100,6 +131,11 @@ def main() -> None:
     print(f"{'Workers':>7} | {'Time (s)':>10} | {'Speedup':>8} | {'Efficiency':>10} | {'Match Parity':>12}")
     print("-" * 61)
 
+    # =========================================================================
+    # OBJECTIVE 4: Evaluate PDC Metrics
+    # Calculate Speedup (S = T_seq / T_par) and Parallel Efficiency (E = S / p)
+    # across varying worker process counts (e.g., 2, 4, and 8 workers).
+    # =========================================================================
     metrics: List[Dict[str, float]] = []
     for w in args.workers:
         par_matches, par_time = run_parallel(files, args.keyword, w, args.case_sensitive)
