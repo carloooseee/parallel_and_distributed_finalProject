@@ -1,9 +1,6 @@
-# Interactive mode (prompts for folder, keyword, and options)
+# PDC finalProject
 python project.py
 
-# Or pass arguments directly:
-# 1. Small dataset (5.4 MB) — shows process-spawn overhead on tiny workloads
-python project.py sample_logs ERROR
+enter a folder name with the same directory
 
-# 2. Large dataset (285.69 MB) — shows true multi-core speedup (up to 2.97x)
-python project.py large_logs ERROR
+enter a keyword to find
